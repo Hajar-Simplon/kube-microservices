@@ -39,12 +39,13 @@ spec:
           command:
             - /app/api
 
-          env:
-            - name: BOOKS_API_HOST
-              value: books-service
-
-            - name: MOVIES_API_HOST
-              value: movies-service
+          envFrom:
+            - configMapKeyRef:
+                name: api-config
+                key: BOOKS_API_HOST
+            - configMapKeyRef:
+                name: api-config
+                key: MOVIES_API_HOST
 
           resources:
             requests:

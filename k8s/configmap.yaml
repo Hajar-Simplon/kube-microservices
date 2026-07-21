@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: api-config
+  namespace: microservices
+
+data:
+  BOOKS_API_HOST: books-service
+  MOVIES_API_HOST: movies-service
