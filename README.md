@@ -279,6 +279,132 @@ Expected response:
 
 ---
 
+# Bonus Features
+
+## Resource Requests and Limits
+
+Each microservice defines CPU and memory requests and limits to improve resource management and ensure fair scheduling across the cluster.
+
+Example configuration:
+
+```yaml
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "250m"
+    memory: "256Mi"
+```
+
+### Benefits
+
+- Guarantees minimum CPU and memory for each container.
+- Prevents a single container from consuming all node resources.
+- Improves cluster stability.
+- Enables Kubernetes to make better scheduling decisions.
+
+The configured Pods belong to the **Burstable** QoS class because the requests are lower than the limits.
+
+---
+
+## Pod Anti-Affinity
+
+Pod Anti-Affinity was configured to improve application availability by distributing replicas of the same microservice across different worker nodes whenever possible.
+
+Example:
+
+```yaml
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - api
+          topologyKey: kubernetes.io/hostname
+```
+
+The same rule is applied to the **Books** and **Movies** deployments.
+
+### Benefits
+
+- Improves High Availability.
+- Reduces the impact of a node failure.
+- Ensures replicas are spread across multiple worker nodes.
+- Demonstrates Kubernetes scheduling capabilities.
+
+---
+
+# High Availability
+
+The Kind cluster contains:
+
+- 1 Control Plane
+- 2 Worker Nodes
+
+With Pod Anti-Affinity enabled, Kubernetes schedules replicas on different worker nodes whenever possible.
+
+Example distribution:
+
+```text
+kind-worker                  kind-worker2
+
+API Pod 1                    API Pod 2
+Books Pod 1                  Books Pod 2
+Movies Pod 1                 Movies Pod 2
+```
+
+If one worker node becomes unavailable, another replica remains available on the second node.
+
+---
+
+# Verification
+
+Check all resources:
+
+```bash
+kubectl get all -n microservices
+```
+
+Check Pod placement:
+
+```bash
+kubectl get pods -o wide -n microservices
+```
+
+Verify resource allocation:
+
+```bash
+kubectl describe pod <pod-name> -n microservices
+```
+
+The output should include:
+
+```text
+Requests:
+  cpu:     100m
+  memory:  128Mi
+
+Limits:
+  cpu:     250m
+  memory:  256Mi
+```
+
+Verify rollout status:
+
+```bash
+kubectl rollout status deployment/api -n microservices
+kubectl rollout status deployment/books -n microservices
+kubectl rollout status deployment/movies -n microservices
+```
+
+---
+
 # Kubernetes Resources
 
 | Resource | Purpose |
@@ -365,14 +491,16 @@ kind delete cluster
 
 # Lessons Learned
 
-- Deploying applications using Kubernetes Deployments.
-- Managing application replicas with ReplicaSets.
-- Exposing applications using Kubernetes Services.
-- Internal communication using ClusterIP Services.
-- External access using a NodePort Service.
-- Service discovery using Kubernetes DNS.
-- Load balancing across multiple Pods.
-- Isolating resources using Namespaces.
+- Deploying microservices with Kubernetes Deployments.
+- Exposing applications using ClusterIP and NodePort Services.
+- Implementing service discovery using Kubernetes DNS.
+- Managing replicas with ReplicaSets.
+- Performing rolling updates.
+- Configuring CPU and memory requests and limits.
+- Understanding Kubernetes QoS classes.
+- Improving availability using Pod Anti-Affinity.
+- Scheduling Pods across multiple worker nodes.
+- Monitoring and troubleshooting applications with `kubectl`.
 
 ---
 
