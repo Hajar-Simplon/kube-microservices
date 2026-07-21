@@ -18,6 +18,27 @@ spec:
         app: books
 
     spec:
+      affinity:
+        podAntiAffinity:
+  
+          preferredDuringSchedulingIgnoredDuringExecution:
+  
+            - weight: 100
+  
+              podAffinityTerm:
+  
+                labelSelector:
+  
+                  matchExpressions:
+  
+                    - key: app
+  
+                      operator: In
+  
+                      values:
+                        - books
+  
+                topologyKey: kubernetes.io/hostname
       containers:
         - name: books
           image: kube-microservices:latest
