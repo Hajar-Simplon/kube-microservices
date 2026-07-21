@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: books
+  namespace: microservices
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: books
+
+  template:
+    metadata:
+      labels:
+        app: books
+
+    spec:
+      containers:
+        - name: books
+          image: kube-microservices:latest
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - /app/books
+
+          ports:
+            - containerPort: 8080

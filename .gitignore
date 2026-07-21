@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# JetBrains
+.idea/
+
+# Vim
+*.swp
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+
+# Kubernetes generated files (if any)
+*.bak

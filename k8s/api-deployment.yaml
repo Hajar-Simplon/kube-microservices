@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: api
+  namespace: microservices
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: api
+
+  template:
+    metadata:
+      labels:
+        app: api
+
+    spec:
+      containers:
+        - name: api
+          image: kube-microservices:latest
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - /app/api
+
+          env:
+            - name: BOOKS_API_HOST
+              value: books-service
+
+            - name: MOVIES_API_HOST
+              value: movies-service
+
+          ports:
+            - containerPort: 8080
