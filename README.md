@@ -15,23 +15,31 @@ The API Gateway aggregates responses from the Books and Movies services and is t
 # Architecture
 
 ```text
-                        Client
-                           │
-                           ▼
-                    NodePort Service
-                    (api-service)
-                           │
-                    API Deployment
-                     (2 replicas)
-                           │
-          ┌────────────────┴────────────────┐
-          │                                 │
-          ▼                                 ▼
-   books-service                    movies-service
-     ClusterIP                         ClusterIP
-          │                                 │
-   Books Deployment                 Movies Deployment
-     (2 replicas)                     (2 replicas)
+                            Client
+                               │
+                               ▼
+                     NodePort Service
+                      (api-service)
+                               │
+                               ▼
+                    API Deployment (2 replicas)
+                               │
+                               ▼
+                        API ConfigMap
+               ┌─────────────────────────┐
+               │ BOOKS_API_HOST          │
+               │ MOVIES_API_HOST         │
+               └─────────────────────────┘
+                               │
+          ┌────────────────────┴────────────────────┐
+          │                                         │
+          ▼                                         ▼
+    books-service                           movies-service
+      ClusterIP                               ClusterIP
+          │                                         │
+          ▼                                         ▼
+   Books Deployment                         Movies Deployment
+      (2 replicas)                            (2 replicas)
 ```
 
 ---
@@ -51,6 +59,7 @@ The API Gateway aggregates responses from the Books and Movies services and is t
 ```text
 .
 ├── Dockerfile
+├── Makefile
 ├── README.md
 ├── kind-config.yaml
 ├── cmd/
@@ -60,6 +69,7 @@ The API Gateway aggregates responses from the Books and Movies services and is t
 │
 └── k8s/
     ├── namespace.yaml
+    ├── configmap.yaml
     ├── api-deployment.yaml
     ├── api-service.yaml
     ├── books-deployment.yaml
@@ -339,6 +349,52 @@ The same rule is applied to the **Books** and **Movies** deployments.
 - Demonstrates Kubernetes scheduling capabilities.
 
 ---
+## ConfigMap
+
+The API Gateway configuration is externalized using a Kubernetes ConfigMap.
+
+Instead of hardcoding environment variables inside the Deployment, the API reads them from the ConfigMap.
+
+Example:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: api-config
+  namespace: microservices
+
+data:
+  BOOKS_API_HOST: books-service
+  MOVIES_API_HOST: movies-service
+```
+
+The Deployment references the ConfigMap using `configMapKeyRef`:
+
+```yaml
+env:
+  - name: BOOKS_API_HOST
+    valueFrom:
+      configMapKeyRef:
+        name: api-config
+        key: BOOKS_API_HOST
+
+  - name: MOVIES_API_HOST
+    valueFrom:
+      configMapKeyRef:
+        name: api-config
+        key: MOVIES_API_HOST
+```
+
+### Benefits
+
+- Separates configuration from application code.
+- Makes configuration easier to update.
+- Improves portability across environments.
+- Follows Kubernetes configuration best practices.
+
+---
 
 # High Availability
 
@@ -416,11 +472,12 @@ kubectl rollout status deployment/movies -n microservices
 | ClusterIP | Internal communication between microservices |
 | NodePort | Exposes the API Gateway outside the cluster |
 
+
 ---
 
 # Service Communication
 
-```
+```text
 Browser
     │
     ▼
@@ -429,15 +486,17 @@ api-service (NodePort)
     ▼
 API Pods
     │
-    ├──────────────► books-service
-    │                    │
-    │                    ▼
-    │               Books Pods
+    ├──────────► ConfigMap
     │
-    └──────────────► movies-service
-                         │
-                         ▼
-                    Movies Pods
+    ├──────────► books-service
+    │                 │
+    │                 ▼
+    │            Books Pods
+    │
+    └──────────► movies-service
+                      │
+                      ▼
+                 Movies Pods
 ```
 
 The API communicates with the backend services using Kubernetes DNS:
